@@ -2,13 +2,19 @@
   <div>
     <div class="headerWrap">
       <div hover-class="viewHover" @click="back" class="back" v-if="hasBack"> 〈 返回 </div>
-      <div>我是头部</div>
+      <div @click="titleFn(title)">{{title}}<span v-if="title !== '我是头部'"> > </span></div>
       <i-progress :status="status" class="headProgress" v-if="isLoad" :percent="progressPer"></i-progress>
     </div>
   </div>
 </template>
 
 <script>
+/** 
+ * @hasBack 是否有返回按钮
+ * @progressPer 进度条百分比
+ * @title 标题
+ * @titleFn 点击标题回调
+ */
 export default {
   props:{
     hasBack:{
@@ -19,14 +25,19 @@ export default {
       type:Number,
       default:0
     },
-    isLoad:{
+    title:{
       type:Boolean,
-      default:false
+      default:'我是头部'
+    },
+    titleFn:{
+      type:Function,
+      default:() => {}
     }
   },
   data:() => {
     return {
-      status:'normal'
+      status:'normal',
+      isLoad:false
     }
   },
   methods: {
@@ -53,6 +64,9 @@ export default {
           this.status = 'normal';
         }, 500);
       }
+    },
+    title (newTitle, oldTitle) {
+      console.log(newTitle, oldTitle)
     }
   }
 }

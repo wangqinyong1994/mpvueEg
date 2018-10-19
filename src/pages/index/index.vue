@@ -4,16 +4,20 @@
       :progressPer="loadPercent"
     />
     <div class="blankView1"></div>
+          
+    
     <scroll-view 
     @scroll="viewScroll" 
     @scrolltolower="scrolltolower"
     @scrolltoupper="scrolltoupper"
-    :upper-threshold="10"
+    :upper-threshold="0"
     scroll-y class="scrollWrap" :style="{height:scrollHeight + 'rpx'}">
+      <i-spin size="large" fix v-if="isPullDown"></i-spin>
       <div>
         <img :src="userInfo.avatarUrl" class="avatarUrl">
         <div class="nickName">{{userInfo.nickName}}</div>
       </div>
+      <map class="map"/>
       <i class="iconfont icon-rili"></i>
       <i-button  @click="pulldown" type="primary" :loading="updateBtnLoading" >点我更新</i-button>
       <i-button  @click="downloadFile" type="primary" :loading="downloadBtnLoading" >点我下载图片</i-button>
@@ -26,6 +30,7 @@
               {{item}}
           </li>
       </ul>
+      <wxParse :content="article" @preview="preview" @navigate="navigate" />
       <i-load-more class="loadmore" v-if="isBtm" :tip="loadMoreTip" :loading="loadMoreLoading"/>
     </scroll-view>
     <i-toast id="toast" />
@@ -37,6 +42,9 @@ import card from '@/components/card'
 import myHead from '@/components/myHead'
 import { mapState } from 'vuex'
 import { $Toast } from '../../../static/iview/base/index'
+import wxParse from 'qs-mpvue-wxparse'
+
+const TRANS_IMG = 'http://img.zcool.cn/community/0125fd5770dfa50000018c1b486f15.jpg@1280w_1l_2o_100sh.jpg'
 
 export default {
   data () {
@@ -53,15 +61,24 @@ export default {
       scrollHeight:'',
       loadPercent: 0,
       isProgressShow: false,
+      article: `<div>我是HTML代码<img src="${TRANS_IMG}" /></div>`,
+      isPullDown:false,
     }
   },
 
   components: {
     card,
-    myHead
+    myHead,
+    wxParse
   },
 
   methods: {
+    preview(src, e) {
+      console.log(src, e)
+    },
+    navigate(href, e) {
+      console.log(href, e)
+    },
     bindViewTap () {
       const url = '../logs/main'
       wx.navigateTo({ url })
@@ -82,6 +99,7 @@ export default {
       // console.log('clickHandle:', msg, ev)
     },
     pulldown () {
+      this.isPullDown = true
       wx.startPullDownRefresh({
         success: res => {
           this.pageInit()
@@ -96,6 +114,7 @@ export default {
         wx.stopPullDownRefresh()
         this.updateInfo = '更新完了'
         this.updateBtnLoading = false
+        this.isPullDown = false
       }, 3000)
     },
     downloadFile () {
@@ -148,7 +167,7 @@ export default {
       this.loadMoreLoading = true;
       clearTimeout(timer)
       var timer = setTimeout(() => {
-        this.loadMoreTip = '暂无数据';
+        this.loadMoreTip = '我是有底线的';
         this.loadMoreLoading = false;
       }, 3000);
       
@@ -192,7 +211,7 @@ export default {
     this.lists = lists
   },
   mounted () {
-    
+
   },
   /** 下拉刷新 */
   onPullDownRefresh () {
@@ -275,4 +294,9 @@ export default {
 .nickName{
   text-align: center;
 }
+.map{
+  margin: 0 auto;
+  position: initial;
+}
+
 </style>

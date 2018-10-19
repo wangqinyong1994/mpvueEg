@@ -13,6 +13,7 @@ export default {
 
 <style>
  @import './style/iconfont.css';
+ @import url("~qs-mpvue-wxparse/src/wxParse.css");
 .container {
   height: 100%;
   display: flex;

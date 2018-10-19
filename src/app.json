@@ -1,9 +1,11 @@
 {
   "pages": [
+    "pages/prePage/main",
     "pages/index/main",
+    
     "pages/logs/main",
-    "pages/counter/main",
-    "pages/prePage/main"
+    "pages/counter/main"
+    
   ],
   "window": {
     "backgroundTextStyle": "light",
