@@ -1,8 +1,8 @@
 {
   "pages": [
-    "pages/prePage/main",
-    "pages/index/main",
     
+    "pages/index/main",
+    "pages/prePage/main",
     "pages/logs/main",
     "pages/counter/main"
     

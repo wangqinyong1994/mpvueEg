@@ -66,7 +66,7 @@ export default {
       }
     },
     title (newTitle, oldTitle) {
-      console.log(newTitle, oldTitle)
+      // console.log(newTitle, oldTitle)
     }
   }
 }
