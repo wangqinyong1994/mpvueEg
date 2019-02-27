@@ -1,8 +1,8 @@
 {
   "pages": [
-    
-    "pages/index/main",
     "pages/prePage/main",
+    "pages/index/main",
+    
     "pages/logs/main",
     "pages/counter/main"
     
@@ -13,7 +13,7 @@
     "navigationBarTitleText": "WeChat",
     "navigationBarTextStyle": "black",
     "enablePullDownRefresh": true,
-    "onReachBottomDistance": true,
+    "onReachBottomDistance": 20,
     "navigationStyle": "custom"
   },
   "tabBar":{

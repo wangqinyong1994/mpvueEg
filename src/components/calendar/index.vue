@@ -1,7 +1,4 @@
 <template>
-  <div>
-    <myHead :hasBack="true" :title="dayStr" :titleFn="changeTitle"/>
-    <div class="blankView1"></div>
     <div class="calendar">
       <div class="week">
         <div>日</div>
@@ -24,21 +21,9 @@
       </div>
       
     </div>
-    <div class="dateBox">{{targetDay}}</div>
-    <picker-view class="datePickView" v-if="isShowPickView" indicator-style="height: 50px;" style="width: 100%; height: 300px;" :value="value" @change="changePickView">
-      <picker-view-column>
-        <view v-for="(item, index) in years" :key="index" style="line-height: 50px">{{item}}年</view>
-      </picker-view-column>
-      <picker-view-column>
-        <view v-for="(item, index) in months" :key="index" style="line-height: 50px">{{item}}月</view>
-      </picker-view-column>
-    </picker-view>
-    <div class="mask" v-if="maskShow" @click="closeMask"></div>
-  </div>
 </template>
 
 <script>
-import myHead from '@/components/myHead'
 import moment from 'moment'
 import { formatNumber } from '../../utils/index';
 
@@ -60,15 +45,13 @@ const monthIndex = months.findIndex(item => item === (moment().month() + 1));
 value.push(yearIndex, monthIndex)
 
 
-
 export default {
-  components: {
-    myHead
-  },
+  props: {
+      dotArr: Array,//标记点
 
+  },
   data () {
     return {
-      dayColor:'',
       list:[],
       dayStr:'',
       dayInfo:'',
@@ -92,7 +75,6 @@ export default {
       isShowPickView:false,
       maskShow:false,
 
-      dotArr: ['2019-02-25', '2019-02-12', '2019-03-12'],//dot
       nowDateInfo: '',//当前时间
     }
   },
@@ -136,7 +118,6 @@ export default {
     },
     //计算日期---日历显示
     showCalendar (date) {
-
       const { dotArr, nowDateInfo } = this;
       const timeArr = moment(date).toArray();
       const daysInMonth = moment(date).daysInMonth();//当前一个月的天数
@@ -344,18 +325,10 @@ export default {
       }
     }
   },
-  onPullDownRefresh () {
-    
-  },
 }
 </script>
 
 <style>
-.blankView1{
-  width: 100%;
-  height: 201rpx;
-}
-
 .calendar{
   width: 100%;
   /* height: 160rpx; */
