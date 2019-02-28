@@ -1,5 +1,9 @@
 <template>
     <div class="calendar">
+      <div class="dateWrap">
+          <div class="dateWrapStr" @click="changeTitle">{{dayStr}} ∨</div>
+          <!-- <div class="backToday" @click="backToday">返回今天</div> -->
+      </div>
       <div class="week">
         <div>日</div>
         <div>一</div>
@@ -12,14 +16,28 @@
       <div class="day" :animation="animationExtend">
         <div @click="dayHandle(item)" :class="{activeDay:nowDateInfo.year == item.year && nowDateInfo.month == item.month && nowDateInfo.day == item.day,targetDay:adjustDate && adjustDate.day == item.day && adjustDate.month == item.month && adjustDate.year == item.year}" v-for="(item, index) in list" :key="index">
           <div class="borderBox">{{item.day > 0 ? item.day : ''}}<div class="myBadge" v-if="nowDateInfo.year == item.year && nowDateInfo.month == item.month && nowDateInfo.day == item.day">今</div>
-          <div class="dayDot" v-if="item.hasDot"></div>
+          <div class="dayDot" v-if="item.hasDot" :style="{backgroundColor: item.type === 'normal' ? 'aqua' : 'yellow'}"></div>
           </div>
         </div>
       </div>
-      <div class="iconTool" @click="iconTap">
-        <i-icon :type="open ? 'packup' : 'unfold'" />
-      </div>
       
+      <div class="dateBox">{{targetDay}}
+          <div class="iconTool" @click="iconTap">
+            <i-icon :type="open ? 'packup' : 'unfold'" />
+        </div>
+      </div>
+      <picker-view class="datePickView" v-if="isShowPickView" indicator-style="height: 50px;" style="width: 100%; height: 300px;" :value="value" @change="changePickView">
+        <picker-view-column>
+            <view v-for="(item, index) in years" :key="index" style="line-height: 50px">{{item}}年</view>
+        </picker-view-column>
+        <picker-view-column>
+            <view v-for="(item, index) in months" :key="index" style="line-height: 50px">{{item}}月</view>
+        </picker-view-column>
+        </picker-view>
+      
+      
+      <div class="mask" v-if="maskShow" @click="closeMask"></div>
+      <slot></slot>
     </div>
 </template>
 
@@ -27,50 +45,44 @@
 import moment from 'moment'
 import { formatNumber } from '../../utils/index';
 
-
-const date = new Date()
-const years = []
-const months = []
-const value = [];
-
-for (let i = 2010; i <= 2099; i++) {
-  years.push(i)
-}
-
-for (let i = 1 ; i <= 12; i++) {
-  months.push(i)
-}
-const yearIndex = years.findIndex(item => item === moment().year());
-const monthIndex = months.findIndex(item => item === (moment().month() + 1));
-value.push(yearIndex, monthIndex)
-
+/** 
+ * @dotArr dot数组
+ * @yearArr 年份范围
+ * @pickHandle pickerview选择回调
+ * @defaultCheckedDay 初始化默认选中日期
+ * @defaultTargetDay 初始化底部日期显示
+ * @initFlod 初始化是否折叠
+ */
 
 export default {
   props: {
       dotArr: Array,//标记点
-
+      yearArr: Array,//年份范围
+      defaultCheckedDay: Object,//默认选中日期
+      defaultTargetDay: String,//底部dom日期
+      initFlod: Boolean,//初始化是否折叠
   },
   data () {
     return {
       list:[],
       dayStr:'',
       dayInfo:'',
-      targetDay:'',
-      open:false,
+      targetDay:'' || this.defaultTargetDay,
+      open: this.initFlod,
       animationExtend:{},
       currentDayInfo: '',
       currentArr:'',//当前星期数组
 
-      adjustDate:'',//当选日期选中时间
+      adjustDate: '' || this.defaultCheckedDay,//当选日期选中时间
 
       chooseDate:'',
       day:'',
 
-      years: years,
-      year: date.getFullYear(),
-      months: months,
+      years: [],
+      year: new Date().getFullYear(),
+      months: [],
       month: 2,
-      value: value,
+      value: [],
 
       isShowPickView:false,
       maskShow:false,
@@ -80,15 +92,37 @@ export default {
   },
 
   created () {
+    const date = this.defaultTargetDay || '';
+    this.initYearMonth()
     this.showToday()
-    this.initCalendar()
-    
+    date ? this.initCalendar(date, true) : this.initCalendar(date)
   },
   methods: {
+    initYearMonth() {
+        const date = new Date()
+        const [startYear, endYear] = this.yearArr;
+        const years = []
+        const months = []
+        const value = [];
+
+        for (let i = startYear; i <= endYear; i++) {
+            years.push(i)
+        }
+
+        for (let i = 1 ; i <= 12; i++) {
+            months.push(i)
+        }
+        const yearIndex = years.findIndex(item => item === moment().year());
+        const monthIndex = months.findIndex(item => item === (moment().month() + 1));
+        value.push(yearIndex, monthIndex)
+        this.years = years;
+        this.months = months;
+        this.value = value;
+    },
     //初始化日历渲染
-    initCalendar (date) {
-      let chooseDate = date || moment().unix() * 1000;
-      const calendarInfo = this.showCalendar(chooseDate);
+    initCalendar (date, init) {
+      let chooseDate = init ? moment().unix() * 1000 : date || moment().unix() * 1000 ;
+      const calendarInfo = this.showCalendar(chooseDate, init);
       const { dayInfo } = calendarInfo;
       if(this.open) {
         this.list = calendarInfo.currentMonthAllDate;
@@ -117,7 +151,7 @@ export default {
       }
     },
     //计算日期---日历显示
-    showCalendar (date) {
+    showCalendar (date, init) {
       const { dotArr, nowDateInfo } = this;
       const timeArr = moment(date).toArray();
       const daysInMonth = moment(date).daysInMonth();//当前一个月的天数
@@ -159,13 +193,16 @@ export default {
 
       //dot数组
       let dotArrRes = dotArr.map(val => {
-          let [year, month, day] = val.split('-');
+          const [year, month, day] = val.date.split('-');
+          const { type } = val;
           return {
             year: year * 1,
             month,
             day,
+            type,
           }
       })
+      
       //折叠显示dot的数组
       let adateArr = dateArr.map(day => {
         let obj = {
@@ -173,13 +210,15 @@ export default {
           month,
           day,
         }
-        dotArrRes.map(b => {
+        dotArrRes.forEach(b => {
           if(b.year == obj.year && b.month == obj.month && b.day == obj.day) {
-            obj.hasDot = true
+            obj.hasDot = true;
+            obj.type = b.type
           }
         })
         return obj
       })
+      
 
       const currentObj = {
         arr: adateArr
@@ -194,30 +233,28 @@ export default {
           year
         })
       }
-      
       res = res.map(a => {
         let obj = {...a}
         dotArrRes.forEach(b => {
           if(b.year == obj.year && b.month == obj.month && b.day == obj.day) {
             obj.hasDot = true
+            obj.type = b.type
           }
         })
         return obj
       })
-
-
       for(let i = 0 ; i < monthStartWeek ; i ++ ) {
         res.unshift('')
       }
-      
+      let dayInfo = init ? this.defaultCheckedDay : {
+        year,
+        month,
+        weekDay,
+        day:formatNumber(originDay)
+      };
       return {
         dateArr: currentObj.arr,//单行展示
-        dayInfo:{
-          year,
-          month,
-          weekDay,
-          day:formatNumber(originDay)
-        },//当前日期
+        dayInfo,//当前选中日期---面板str
         currentObj,//当前数组储存值
         currentMonthAllDate:res,//当前月份所有日期(全展示)
         chooseDate: date
@@ -270,8 +307,8 @@ export default {
     },
     changePickView (e) {
       const val = e.mp.detail.value;
-      const year = years[val[0]];
-      const month = months[val[1]];
+      const year = this.years[val[0]];
+      const month = this.months[val[1]];
       this.value = val;
       this.year = year;
       this.month = month;
@@ -282,13 +319,25 @@ export default {
         day: '01'
       }
       this.dayStr = `${year}年${month}月`
+      this.$emit('pickHandle', `${year}-${formatNumber(month)}-01`)
       this.isShowPickView = false;
       this.maskShow = false;
     },
     closeMask () {
       this.maskShow = false;
       this.isShowPickView = false;
-    }
+    },
+    backToday() {
+        const [year, month, day ] = moment().toArray();
+        this.targetDay = `${year}-${formatNumber(month + 1)}-${formatNumber(day)}`
+        this.adjustDate = {
+            year,
+            month: formatNumber(month + 1),
+            day: formatNumber(day),
+        }
+        this.value = [9, 1]
+        this.initCalendar()
+    } 
   },
   watch: {
     list:(newVal, oldVal) => {
@@ -308,6 +357,7 @@ export default {
     chooseDate:function(newVal, oldVal) {
       if(!this.open) {
         this.scalelogo(100);
+        console.log(372)
         const currentArr = this.showCalendar(newVal).currentObj.arr;
         this.list = currentArr
       }else{
@@ -321,7 +371,12 @@ export default {
           scrollHeight = 550
         }
         this.scalelogo(scrollHeight);
-        this.list = this.showCalendar(newVal).currentMonthAllDate
+        if(!oldVal) {
+          this.list = this.showCalendar(newVal, true).currentMonthAllDate
+        }else {
+          this.list = this.showCalendar(newVal).currentMonthAllDate
+        }
+        
       }
     }
   },
@@ -334,6 +389,26 @@ export default {
   /* height: 160rpx; */
   background-color: #333;
   position: relative;
+}
+.dateWrap {
+    width: 100%;
+    height: 80rpx;
+    position: relative;
+    background-color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center; 
+}
+.dateWrap .dateWrapStr {
+    color: #333;
+    margin-left: 20rpx;
+}
+.dateWrap .backToday {
+    font-size: 26rpx;
+    border: 2rpx solid #333;
+    padding: 4rpx 10rpx;
+    margin-right: 20rpx;
+    border-radius: 10rpx;
 }
 .week, .day{
   width: 700rpx;
@@ -409,13 +484,14 @@ export default {
   width: 100%;
   height: 400rpx;
   background-color: antiquewhite;
+  position: relative;
 }
 
 .iconTool {
   width: 100rpx;
   height: 20rpx;
   position: absolute;
-  bottom: -20rpx;
+  top: 0rpx;
   left: 325rpx;
   background-color: #fff;
   line-height: 20rpx;
