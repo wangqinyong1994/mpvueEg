@@ -5,12 +5,14 @@
     <calendar 
       :dotArr='dotArr'
       @pickHandle='pickHandle'
+      @dateHandle='dateHandle'
       :yearArr='yearArr'
       :defaultCheckedDay="defaultCheckedDay"
       :defaultTargetDay="defaultTargetDay"
       :initFlod="false"
     >
     </calendar>
+    <div>{{defaultTargetDay}}</div>
   </div>
 </template>
 
@@ -45,7 +47,26 @@ export default {
   },
   methods: {
     pickHandle(date) {
-      console.log(date)
+      const arr = date.split('-');
+      if(arr[1] === '02') {
+        this.dotArr = [
+          {date: '2019-02-25', type: 'normal'},
+          {date: '2019-02-12', type: 'unnormal'},
+        ]
+      }else {
+        this.dotArr = [
+          {date: '2019-03-25', type: 'normal'},
+          {date: '2019-03-01', type: 'normal'},
+          {date: '2019-03-11', type: 'normal'},
+          {date: '2019-03-31', type: 'normal'},
+          {date: '2019-03-12', type: 'unnormal'},
+        ]
+      }
+      this.defaultTargetDay = date
+      
+    },
+    dateHandle(date) {
+      this.defaultTargetDay = date
     }
   }
 

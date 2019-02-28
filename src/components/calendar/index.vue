@@ -1,8 +1,8 @@
 <template>
-    <div class="calendar">
+    <div class="calendar" :style="{backgroundColor: bgColor}">
       <div class="dateWrap">
           <div class="dateWrapStr" @click="changeTitle">{{dayStr}} ∨</div>
-          <!-- <div class="backToday" @click="backToday">返回今天</div> -->
+          <div class="backToday" @click="backToday">返回今天</div>
       </div>
       <div class="week">
         <div>日</div>
@@ -16,16 +16,20 @@
       <div class="day" :animation="animationExtend">
         <div @click="dayHandle(item)" :class="{activeDay:nowDateInfo.year == item.year && nowDateInfo.month == item.month && nowDateInfo.day == item.day,targetDay:adjustDate && adjustDate.day == item.day && adjustDate.month == item.month && adjustDate.year == item.year}" v-for="(item, index) in list" :key="index">
           <div class="borderBox">{{item.day > 0 ? item.day : ''}}<div class="myBadge" v-if="nowDateInfo.year == item.year && nowDateInfo.month == item.month && nowDateInfo.day == item.day">今</div>
-          <div class="dayDot" v-if="item.hasDot" :style="{backgroundColor: item.type === 'normal' ? 'aqua' : 'yellow'}"></div>
+          <div class="dayDot" v-if="item.hasDot" :style="{backgroundColor: item.type === 'normal' ? normalColor : unNormalColor}"></div>
           </div>
         </div>
       </div>
       
-      <div class="dateBox">{{targetDay}}
+      <!-- <div class="dateBox">{{targetDay}}
+        <slot></slot>
           <div class="iconTool" @click="iconTap">
             <i-icon :type="open ? 'packup' : 'unfold'" />
         </div>
-      </div>
+      </div> -->
+      <div class="iconTool" @click="iconTap">
+            <i-icon :type="open ? 'packup' : 'unfold'" />
+        </div>
       <picker-view class="datePickView" v-if="isShowPickView" indicator-style="height: 50px;" style="width: 100%; height: 300px;" :value="value" @change="changePickView">
         <picker-view-column>
             <view v-for="(item, index) in years" :key="index" style="line-height: 50px">{{item}}年</view>
@@ -37,7 +41,7 @@
       
       
       <div class="mask" v-if="maskShow" @click="closeMask"></div>
-      <slot></slot>
+      
     </div>
 </template>
 
@@ -47,11 +51,15 @@ import { formatNumber } from '../../utils/index';
 
 /** 
  * @dotArr dot数组
+ * @normalColor 正常dot颜色(默认aqua)
+ * @unNormalColor 非正常dot颜色(默认orange)
  * @yearArr 年份范围
  * @pickHandle pickerview选择回调
+ * @dateHandle 选中日期回调
  * @defaultCheckedDay 初始化默认选中日期
  * @defaultTargetDay 初始化底部日期显示
  * @initFlod 初始化是否折叠
+ * @bgColor 日历背景颜色
  */
 
 export default {
@@ -61,6 +69,18 @@ export default {
       defaultCheckedDay: Object,//默认选中日期
       defaultTargetDay: String,//底部dom日期
       initFlod: Boolean,//初始化是否折叠
+      normalColor: {
+        type: String,
+        default: 'aqua',
+      },
+      unNormalColor: {
+        type: String,
+        default: 'orange',
+      },
+      bgColor: {
+        type: String,
+        default: '#333'
+      }
   },
   data () {
     return {
@@ -264,7 +284,8 @@ export default {
     dayHandle (item) {
       if(item) {
         this.targetDay = `${item.year}-${item.month}-${item.day}`;
-        this.adjustDate = item
+        this.adjustDate = item;
+        this.$emit('dateHandle', this.targetDay)
       } 
     },
     //更改显示日期
@@ -335,7 +356,8 @@ export default {
             month: formatNumber(month + 1),
             day: formatNumber(day),
         }
-        this.value = [9, 1]
+        this.$emit('pickHandle', this.targetDay)
+        this.initYearMonth()
         this.initCalendar()
     } 
   },
@@ -357,7 +379,6 @@ export default {
     chooseDate:function(newVal, oldVal) {
       if(!this.open) {
         this.scalelogo(100);
-        console.log(372)
         const currentArr = this.showCalendar(newVal).currentObj.arr;
         this.list = currentArr
       }else{
@@ -515,7 +536,7 @@ export default {
 .mask{
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(255, 255, 255, 0.8);
   position: fixed;
   left: 0;
   top: 0;
