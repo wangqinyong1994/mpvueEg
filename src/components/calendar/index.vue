@@ -285,6 +285,7 @@ export default {
       if(item) {
         this.targetDay = `${item.year}-${item.month}-${item.day}`;
         this.adjustDate = item;
+        this.dayStr = `${item.year}年${item.month}月`;
         this.$emit('dateHandle', this.targetDay)
       } 
     },
