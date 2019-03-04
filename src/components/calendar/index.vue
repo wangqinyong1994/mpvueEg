@@ -2,7 +2,12 @@
     <div class="calendar" :style="{backgroundColor: bgColor}">
       <div class="dateWrap">
           <div class="dateWrapStr" @click="changeTitle">{{dayStr}} ∨</div>
-          <div class="backToday" @click="backToday">返回今天</div>
+          <div class="backToday">
+            <block>
+              <span v-if="isToday">今天</span>
+              <span v-else @click="backToday">返回今天</span>
+            </block>
+          </div>
       </div>
       <div class="week">
         <div>日</div>
@@ -108,18 +113,19 @@ export default {
       maskShow:false,
 
       nowDateInfo: '',//当前时间
+      isToday: false,
     }
   },
 
   created () {
     const date = this.defaultTargetDay || '';
-    this.initYearMonth()
-    this.showToday()
+    this.initYearMonth(date)
+    this.showToday(date)
     date ? this.initCalendar(date, true) : this.initCalendar(date)
   },
   methods: {
-    initYearMonth() {
-        const date = new Date()
+    initYearMonth(date) {
+        // const date = new Date()
         const [startYear, endYear] = this.yearArr;
         const years = []
         const months = []
@@ -132,8 +138,8 @@ export default {
         for (let i = 1 ; i <= 12; i++) {
             months.push(i)
         }
-        const yearIndex = years.findIndex(item => item === moment().year());
-        const monthIndex = months.findIndex(item => item === (moment().month() + 1));
+        const yearIndex = years.findIndex(item => item === moment(date).year());
+        const monthIndex = months.findIndex(item => item === (moment(date).month() + 1));
         value.push(yearIndex, monthIndex)
         this.years = years;
         this.months = months;
@@ -141,7 +147,8 @@ export default {
     },
     //初始化日历渲染
     initCalendar (date, init) {
-      let chooseDate = init ? moment().unix() * 1000 : date || moment().unix() * 1000 ;
+      // let chooseDate = init ? moment().unix() * 1000 : date || moment().unix() * 1000 ;
+      let chooseDate = date;
       const calendarInfo = this.showCalendar(chooseDate, init);
       const { dayInfo } = calendarInfo;
       if(this.open) {
@@ -162,13 +169,16 @@ export default {
       this.chooseDate = calendarInfo.chooseDate
     },
     //显示今天
-    showToday() {
-      const nowDate = moment().toArray();
+    showToday(date) {
+      const [year, month, day] = moment().toArray();
+      const targetDay = `${year}-${formatNumber(month + 1)}-${formatNumber(day)}`;
+      this.isToday = targetDay === date;
       this.nowDateInfo = {
-        year: nowDate[0],
-        month: formatNumber(nowDate[1] + 1),
-        day: nowDate[2],
+        year,
+        month: formatNumber(month + 1),
+        day,
       }
+      
     },
     //计算日期---日历显示
     showCalendar (date, init) {
@@ -183,34 +193,7 @@ export default {
       let minuDay = day;
       const weekDay = moment(date).day();//当前日子星期几
       const monthStartWeek = moment(date).startOf('month').day();//当前月份第一天星期几
-      let dateArr = new Array(7);
-      dateArr[weekDay] = formatNumber(day);
-      for(let i = weekDay - 1 ; i >= 0 ; i -- ) {
-        if(day <= 1) {
-          day = '';
-        }
-        dateArr[i] = formatNumber(day - 1);
-        day = day - 1 ;
-      }
-      for(let i = weekDay + 1 ; i < 7 ; i ++ ) {
-        if(minuDay >= daysInMonth) {
-          dateArr[i] = '';
-        }else{
-          dateArr[i] = formatNumber(minuDay + 1);
-          minuDay = minuDay + 1 ;
-        }
-      }
-      if(year == nowDateInfo.year && month == nowDateInfo.month) {
-        //初始化设定
-        if(nowDateInfo.nowDateArr) {
-          //有值---赋值
-          dateArr = nowDateInfo.nowDateArr
-        }else {
-          //无值---存值
-          this.nowDateInfo.nowDateArr = dateArr
-        }
-      }
-
+      let dateArr = this.flodDateChange({weekDay, day, minuDay, daysInMonth, year, month});
       //dot数组
       let dotArrRes = dotArr.map(val => {
           const [year, month, day] = val.date.split('-');
@@ -280,13 +263,52 @@ export default {
         chooseDate: date
       }
     },
+
+    // 折叠日期更改与显示
+    flodDateChange({weekDay, day, minuDay, daysInMonth, year, month}) {
+      let dateArr = new Array(7);
+      const { nowDateInfo } = this;
+      dateArr[weekDay] = formatNumber(day);
+      for(let i = weekDay - 1 ; i >= 0 ; i -- ) {
+        if(day <= 1) {
+          day = '';
+        }
+        dateArr[i] = formatNumber(day - 1);
+        day = day - 1 ;
+      }
+      for(let i = weekDay + 1 ; i < 7 ; i ++ ) {
+        if(minuDay >= daysInMonth) {
+          dateArr[i] = '';
+        }else{
+          dateArr[i] = formatNumber(minuDay + 1);
+          minuDay = minuDay + 1 ;
+        }
+      }
+      return dateArr
+    },
+
     //点击日期回调
     dayHandle (item) {
       if(item) {
-        this.targetDay = `${item.year}-${item.month}-${item.day}`;
+        const targetDay = `${item.year}-${item.month}-${item.day}`
+        this.targetDay = targetDay;
         this.adjustDate = item;
         this.dayStr = `${item.year}年${item.month}月`;
+       
+        const weekDay = moment(targetDay).day();
+        const timeArr = moment(targetDay).toArray();
+        const daysInMonth = moment(targetDay).daysInMonth();
+        const day = timeArr[2];
+        const minuDay = day;
+        const year = timeArr[0];
+        const month = formatNumber(timeArr[1] + 1);
+
+        this.chooseDate = targetDay;
+
+        this.flodDateChange({weekDay, day, minuDay, daysInMonth, year, month})
         this.$emit('dateHandle', this.targetDay)
+
+        console.log(this.nowDateInfo)
       } 
     },
     //更改显示日期
@@ -350,30 +372,47 @@ export default {
       this.isShowPickView = false;
     },
     backToday() {
-        const [year, month, day ] = moment().toArray();
-        this.targetDay = `${year}-${formatNumber(month + 1)}-${formatNumber(day)}`
+        const [year, month, day] = moment().toArray();
+        const targetDay = `${year}-${formatNumber(month + 1)}-${formatNumber(day)}`
+        this.targetDay = targetDay
         this.adjustDate = {
             year,
             month: formatNumber(month + 1),
             day: formatNumber(day),
         }
+        console.log(this.nowDateInfo)
         this.$emit('pickHandle', this.targetDay)
-        this.initYearMonth()
+        
         this.initCalendar()
+        this.initYearMonth(targetDay)
     } 
   },
   watch: {
-    list:(newVal, oldVal) => {
-
+    targetDay(newVal, oldVal) {
+      const [year, month, day ] = moment().toArray();
+      const targetDay = `${year}-${formatNumber(month + 1)}-${formatNumber(day)}`
+      if(targetDay === newVal) {
+        this.isToday = true;
+      }else {
+        this.isToday = false;
+      }
+        
     },
     dayStr:function(newVal, oldVal){
       if(newVal && oldVal) {
         const date = newVal.replace(/[年|月]+/g, '-').split('-');
+        const targetDay = this.targetDay.split('-');
         const year = date[0];
         const month = formatNumber(date[1]);
         this.year = year;
         this.month = month;
-        let chooseDate = moment(`${year}-${month}-01`).unix() * 1000;
+        let chooseDate;
+        if(year == targetDay[0] && month == targetDay[1]) {
+          chooseDate = moment(`${year}-${month}-${targetDay[2]}`).unix() * 1000;
+        }else {
+          chooseDate = moment(`${year}-${month}-01`).unix() * 1000;
+        }
+        
         this.initCalendar(chooseDate)
       }
     },
